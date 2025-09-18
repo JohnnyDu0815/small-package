@@ -171,11 +171,13 @@ const preset_outbound = {
 	],
 	direct: [
 		['', _('null')],
-		['DIRECT']
+		['DIRECT'],
+		['GLOBAL']
 	],
 	dns: [
 		['', 'RULES'],
-		['DIRECT']
+		['DIRECT'],
+		['GLOBAL']
 	]
 };
 
@@ -337,7 +339,7 @@ const CBIGridSection = form.GridSection.extend({
 				button.disabled = true;
 				return _('Expecting: %s').format(_('unique identifier'));
 			} else {
-				button.disabled = null;
+				button.removeAttribute('disabled');
 				return true;
 			}
 		}, 'blur', 'keyup');
@@ -1100,6 +1102,28 @@ function textvalue2Value(section_id) {
 	return this.vallist[i];
 }
 
+function validatePresetIDs(disoption_list, section_id) {
+	let node;
+	let hm_prefmt = glossary[this.section.sectiontype].prefmt;
+	let preset_ids = [
+		'fchomo_direct_list',
+		'fchomo_proxy_list',
+		'fchomo_china_list',
+		'fchomo_gfw_list'
+	];
+
+	if (preset_ids.map((v) => hm_prefmt.format(v)).includes(section_id)) {
+		disoption_list.forEach(([typ, opt]) => {
+			node = this.section.getUIElement(section_id, opt)?.node;
+			(typ ? node?.querySelector(typ) : node)?.setAttribute(typ === 'textarea' ? 'readOnly' : 'disabled', '');
+		});
+
+		this.map.findElement('id', 'cbi-fchomo-' + section_id)?.lastChild.querySelector('.cbi-button-remove')?.remove();
+	}
+
+	return true;
+}
+
 function validateAuth(section_id, value) {
 	if (!value)
 		return true;
@@ -1455,6 +1479,7 @@ return baseclass.extend({
 	handleReload,
 	handleRemoveIdles,
 	textvalue2Value,
+	validatePresetIDs,
 	validateAuth,
 	validateAuthUsername,
 	validateAuthPassword,

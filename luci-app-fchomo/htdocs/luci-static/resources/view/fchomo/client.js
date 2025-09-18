@@ -677,13 +677,13 @@ function renderRules(s, uciconfig) {
 		if (['GEOIP', 'IP-ASN', 'IP-CIDR', 'IP-CIDR6', 'IP-SUFFIX', 'RULE-SET'].includes(value)) {
 			['no-resolve', 'src'].forEach((opt) => {
 				let UIEl = this.section.getUIElement(section_id, opt);
-				UIEl.node.querySelector('input').disabled = null;
+				UIEl.node.querySelector('input').removeAttribute('disabled');
 			});
 		} else {
 			['no-resolve', 'src'].forEach((opt) => {
 				let UIEl = this.section.getUIElement(section_id, opt);
 				UIEl.setValue('');
-				UIEl.node.querySelector('input').disabled = 'true';
+				UIEl.node.querySelector('input').disabled = true;
 			});
 
 			let UIEl = this.section.getUIElement(section_id, 'entry');
@@ -1135,6 +1135,14 @@ return view.extend({
 		so = ss.option(form.Flag, 'enabled', _('Enable'));
 		so.default = so.enabled;
 		so.editable = true;
+		so.validate = function(section_id, value) {
+			let n = 0;
+
+			return hm.validatePresetIDs.call(this, [
+				['select', 'type'],
+				['select', `payload${n}_` + 'rule_set']
+			], ...arguments);
+		}
 
 		renderRules(ss, data[0]);
 
@@ -1145,9 +1153,10 @@ return view.extend({
 			return new RulesEntry(uci.get(data[0], section_id, 'entry')).subrule || '';
 		}
 		so.validate = function(section_id, value) {
+			let UIEl = this.section.getUIElement(section_id, 'detour');
 			value = this.formvalue(section_id);
 
-			this.section.getUIElement(section_id, 'detour').node.querySelector('select').disabled = value ? 'true' : null;
+			UIEl.node.querySelector('select').disabled = value ? true : null;
 
 			return true;
 		}
@@ -1373,7 +1382,7 @@ return view.extend({
 			// params only available on DoH
 			// https://github.com/muink/mihomo/blob/43f21c0b412b7a8701fe7a2ea6510c5b985a53d6/config/config.go#L1211C8-L1211C14
 			if (value.match(/^https?:\/\//)){
-				this.section.getUIElement(section_id, 'h3').node.querySelector('input').disabled = null;
+				this.section.getUIElement(section_id, 'h3').node.querySelector('input').removeAttribute('disabled');
 			} else {
 				let UIEl = this.section.getUIElement(section_id, 'address');
 
@@ -1385,7 +1394,7 @@ return view.extend({
 				['h3'].forEach((opt) => {
 					let UIEl = this.section.getUIElement(section_id, opt);
 					UIEl.setValue('');
-					UIEl.node.querySelector('input').disabled = 'true';
+					UIEl.node.querySelector('input').disabled = true;
 				});
 			}
 
@@ -1472,7 +1481,7 @@ return view.extend({
 		so.modalonly = true;
 
 		so = ss.option(form.Flag, 'ecs-override', _('ECS override'),
-			_('Override ECS in original request.'));
+			_('Override the existing ECS in original request.'));
 		so.default = so.disabled;
 		so.load = function(section_id) {
 			return boolToFlag(new DNSAddress(uci.get(data[0], section_id, 'address')).parseParam('ecs-override') ? true : false);
@@ -1578,6 +1587,12 @@ return view.extend({
 		so = ss.option(form.Flag, 'enabled', _('Enable'));
 		so.default = so.enabled;
 		so.editable = true;
+		so.validate = function(section_id, value) {
+			return hm.validatePresetIDs.call(this, [
+				['select', 'type'],
+				['', 'rule_set']
+			], ...arguments);
+		}
 
 		so = ss.option(form.ListValue, 'type', _('Type'));
 		so.value('domain', _('Domain'));
