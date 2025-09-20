@@ -513,7 +513,7 @@ if (!isEmpty(main_node)) {
 		if (cfg.enabled !== '1')
 			return;
 
-		let outboud = get_outbound(cfg.outbound);
+		let outbound = get_outbound(cfg.outbound);
 		if (outbound === 'direct-out' && isEmpty(self_mark))
 			outbound = null;
 
@@ -754,18 +754,18 @@ if (!isEmpty(main_node)) {
 				push(config.endpoints, generate_endpoint(outbound));
 				config.endpoints[length(config.endpoints)-1].bind_interface = cfg.bind_interface;
 				config.endpoints[length(config.endpoints)-1].detour = get_outbound(cfg.outbound);
-				if (cfg.domain_resolver || cfg.domain_strategy)
+				if (cfg.domain_resolver)
 					config.endpoints[length(config.endpoints)-1].domain_resolver = {
-						server: get_resolver(cfg.domain_resolver || default_outbound_dns),
+						server: get_resolver(cfg.domain_resolver),
 						strategy: cfg.domain_strategy
 					};
 			} else {
 				push(config.outbounds, generate_outbound(outbound));
 				config.outbounds[length(config.outbounds)-1].bind_interface = cfg.bind_interface;
 				config.outbounds[length(config.outbounds)-1].detour = get_outbound(cfg.outbound);
-				if (cfg.domain_resolver || cfg.domain_strategy)
+				if (cfg.domain_resolver)
 					config.outbounds[length(config.outbounds)-1].domain_resolver = {
-						server: get_resolver(cfg.domain_resolver || default_outbound_dns),
+						server: get_resolver(cfg.domain_resolver),
 						strategy: cfg.domain_strategy
 					};
 			}
