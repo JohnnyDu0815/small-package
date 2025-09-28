@@ -145,7 +145,7 @@ return view.extend({
 				const playButton = mapEl.querySelector('.cbi-map-descr > img');
 				const audio = mapEl.querySelector('.cbi-map-descr > audio');
 
-				playButton.addEventListener('click', function() {
+				playButton.addEventListener('click', () => {
 					if (audio.paused)
 						audio.play();
 				});
@@ -208,7 +208,7 @@ return view.extend({
 			return E([
 				E('button', {
 					'class': 'cbi-button cbi-button-apply',
-					'click': ui.createHandlerFn(this, function() {
+					'click': ui.createHandlerFn(this, () => {
 						let weight = document.getElementById(ElId);
 
 						weight.innerHTML = '';
@@ -257,7 +257,7 @@ return view.extend({
 					]),
 					E('button', {
 						'class': 'cbi-button cbi-button-apply',
-						'click': ui.createHandlerFn(this, function() {
+						'click': ui.createHandlerFn(this, () => {
 							const stun = this.formvalue(this.section.section);
 							const l4proto = document.getElementById('_status_nattest_l4proto').value;
 
@@ -404,12 +404,10 @@ return view.extend({
 		so.default = 'off';
 
 		so = ss.option(form.ListValue, 'log_level', _('Log level'));
-		so.value('silent', _('Silent'));
-		so.value('error', _('Error'));
-		so.value('warning', _('Warning'));
-		so.value('info', _('Info'));
-		so.value('debug', _('Debug'));
 		so.default = 'warning';
+		hm.log_levels.forEach((res) => {
+			so.value.apply(so, res);
+		})
 
 		so = ss.option(form.Flag, 'etag_support', _('ETag support'));
 		so.default = so.enabled;
@@ -521,6 +519,10 @@ return view.extend({
 		so = ss.option(form.Flag, 'tun_endpoint_independent_nat', _('Endpoint-Independent NAT'),
 			_('Performance may degrade slightly, so it is not recommended to enable on when it is not needed.'));
 		so.default = so.disabled;
+
+		so = ss.option(form.Flag, 'tun_disable_icmp_forwarding', _('Disable ICMP Forwarding'),
+			_('Prevent ICMP loopback issues in some cases. Ping will not show real delay.'));
+		so.default = so.enabled;
 		/* Inbound END */
 
 		/* TLS START */
@@ -544,6 +546,17 @@ return view.extend({
 		so.datatype = 'file';
 		so.value('/etc/ssl/acme/example.key');
 
+		so = ss.option(form.ListValue, 'tls_client_auth_type', _('API Client Auth type') + _(' (mTLS)'));
+		so.default = hm.tls_client_auth_types[0][0];
+		hm.tls_client_auth_types.forEach((res) => {
+			so.value.apply(so, res);
+		})
+
+		so = ss.option(form.Value, 'tls_client_auth_cert_path', _('API Client Auth Certificate path') + _(' (mTLS)'),
+			_('The %s public key, in PEM format.').format(_('Client')));
+		so.value('/etc/fchomo/certs/client_publickey.pem');
+		so.validate = L.bind(hm.validateMTLSClientAuth, so, 'tls_client_auth_type');
+
 		so = ss.option(hm.GenText, 'tls_ech_key', _('API ECH key'));
 		so.placeholder = '-----BEGIN ECH KEYS-----\nACATwY30o/RKgD6hgeQxwrSiApLaCgU+HKh7B6SUrAHaDwBD/g0APwAAIAAgHjzK\nmadSJjYQIf9o1N5GXjkW4DEEeb17qMxHdwMdNnwADAABAAEAAQACAAEAAwAIdGVz\ndC5jb20AAA==\n-----END ECH KEYS-----';
 		so.hm_placeholder = 'outer-sni.any.domain';
@@ -552,9 +565,11 @@ return view.extend({
 		so.hm_options = {
 			type: 'ech-keypair',
 			params: '',
-			result: {
-				ech_key: so.option,
-				ech_cfg: 'tls_ech_cfg'
+			callback: function(result) {
+				return [
+					[this.option, result.ech_key],
+					['tls_ech_cfg', result.ech_cfg]
+				]
 			}
 		}
 		so.renderWidget = function(section_id, option_index, cfgvalue) {
@@ -570,7 +585,7 @@ return view.extend({
 				}),
 				E('button', {
 					class: 'cbi-button cbi-button-add',
-					click: ui.createHandlerFn(this, function() {
+					click: ui.createHandlerFn(this, () => {
 						this.hm_options.params = document.getElementById(cbid).value;
 
 						return hm.handleGenKey.call(this, this.hm_options);
